@@ -1,0 +1,4 @@
+#pragma once
+
+#define PROJECT_ROOT_DIR "${PROJECT_SOURCE_DIR}/"
+#define PROJECT_SRC_DIR "${PROJECT_SOURCE_DIR}/src/"

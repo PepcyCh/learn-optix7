@@ -1,0 +1,13 @@
+.DS_Store
+
+.vs
+.vscode
+.cache
+
+build*
+cmake-build*
+out
+
+defines.h
+
+*.ptx
