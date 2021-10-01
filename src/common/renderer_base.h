@@ -48,4 +48,6 @@ protected:
     GLFWwindow *window_;
     unsigned int screen_tex_;
     unsigned int screen_shader_;
+
+    FrameCounter frame_counter_;
 };

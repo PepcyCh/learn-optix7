@@ -42,7 +42,7 @@ public:
         launch_params_.frame_id = 0;
         launch_params_.frame_width = color_buffer_width_;
         launch_params_.frame_height = color_buffer_height_;
-        launch_params_.color_buffer = reinterpret_cast<unsigned int *>(color_buffer_.DevicePtr());
+        launch_params_.color_buffer = reinterpret_cast<float *>(color_buffer_.DevicePtr());
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
         return true;
@@ -52,7 +52,7 @@ public:
         if (OptixApp::Resize(width, height)) {
             launch_params_.frame_width = width;
             launch_params_.frame_height = height;
-            launch_params_.color_buffer = reinterpret_cast<unsigned int*>(color_buffer_.DevicePtr());
+            launch_params_.color_buffer = reinterpret_cast<float *>(color_buffer_.DevicePtr());
             return true;
         }
         return false;
@@ -254,7 +254,7 @@ private:
 
 int main() {
     try {
-        OptixInit app(1200, 1024, "Learn OptiX 7");
+        OptixInit app(1200, 900, "Learn OptiX 7");
         if (!app.Initialize()) {
             fmt::print(stderr, "Failed to initialize\n");
             return -1;

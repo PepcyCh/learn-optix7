@@ -87,8 +87,8 @@ void OptixApp::InitGl() {
 
     glGenTextures(1, &screen_tex_);
     glBindTexture(GL_TEXTURE_2D, screen_tex_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, color_buffer_width_, color_buffer_height_,
-        0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, color_buffer_width_, color_buffer_height_,
+        0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -115,7 +115,7 @@ bool OptixApp::Initialize() {
 
     CreateContext();
 
-    color_buffer_.Alloc(sizeof(unsigned int) * color_buffer_width_ * color_buffer_height_);
+    color_buffer_.Alloc(4 * sizeof(float) * color_buffer_width_ * color_buffer_height_);
 
     return true;
 }
@@ -143,9 +143,9 @@ void OptixApp::MainLoop() {
 
         Render();
 
-        const size_t pixel_count = static_cast<size_t>(color_buffer_width_) * color_buffer_height_;
-        std::vector<unsigned int> data(pixel_count);
-        color_buffer_.Download(data.data(), pixel_count * sizeof(unsigned int));
+        const size_t data_size = 4 * sizeof(float) * color_buffer_width_ * color_buffer_height_;
+        std::vector<uint8_t> data(data_size);
+        color_buffer_.Download(data.data(), data_size);
         glTexSubImage2D(
             GL_TEXTURE_2D,
             0,
@@ -154,7 +154,7 @@ void OptixApp::MainLoop() {
             color_buffer_width_,
             color_buffer_height_,
             GL_RGBA,
-            GL_UNSIGNED_BYTE,
+            GL_FLOAT,
             data.data()
         );
 
@@ -211,14 +211,14 @@ bool OptixApp::Resize(int width, int height) {
         color_buffer_width_ = width;
         color_buffer_height_ = height;
 
-        color_buffer_.Resize(sizeof(unsigned int) * width * height);
+        color_buffer_.Resize(4 * sizeof(float) * width * height);
 
         glViewport(0, 0, width, height);
 
         glDeleteTextures(1, &screen_tex_);
         glGenTextures(1, &screen_tex_);
         glBindTexture(GL_TEXTURE_2D, screen_tex_);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

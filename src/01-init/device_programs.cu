@@ -19,7 +19,10 @@ OPTIX_RAYGEN(RenderFrame)() {
     const int g = iy % 256;
     const int b = (ix + iy) % 256;
 
-    const unsigned int rgba = 0xff000000 | r | (g << 8) | (b << 16);
-    const unsigned int buffer_index = ix + iy * optix_launch_params.frame_width;
-    optix_launch_params.color_buffer[buffer_index] = rgba;
+    // const unsigned int rgba = 0xff000000 | r | (g << 8) | (b << 16);
+    const unsigned int buffer_index = 4 * (ix + iy * optix_launch_params.frame_width);
+    optix_launch_params.color_buffer[buffer_index] = r / 255.0f;
+    optix_launch_params.color_buffer[buffer_index + 1] = g / 255.0f;
+    optix_launch_params.color_buffer[buffer_index + 2] = b / 255.0f;
+    optix_launch_params.color_buffer[buffer_index + 3] = 1.0;
 }
