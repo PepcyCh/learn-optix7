@@ -56,3 +56,8 @@ static __forceinline__ __device__ Payload *GetRayPayload() {
     const uint64_t ptr_addr = (static_cast<uint64_t>(u0) << 32) | u1;
     return reinterpret_cast<Payload *>(ptr_addr);
 }
+
+static __forceinline__ __device__ Vec3 GetWorldRayDirection() {
+    float3 ray_dir = optixGetWorldRayDirection();
+    return Vec3(ray_dir.x, ray_dir.y, ray_dir.z);
+}

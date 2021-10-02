@@ -51,7 +51,7 @@ public:
         launch_params_.frame.id = 0;
         launch_params_.frame.width = color_buffer_width_;
         launch_params_.frame.height = color_buffer_height_;
-        launch_params_.frame.color_buffer = reinterpret_cast<Vec4 *>(color_buffer_.DevicePtr());
+        launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
         launch_params_.traversable = BuildAccel();
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
@@ -331,7 +331,7 @@ private:
         if (OptixApp::Resize(width, height)) {
             launch_params_.frame.width = width;
             launch_params_.frame.height = height;
-            launch_params_.frame.color_buffer = reinterpret_cast<Vec4 *>(color_buffer_.DevicePtr());
+            launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
             UpdateCamera();
             return true;
         }

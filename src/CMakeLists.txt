@@ -14,3 +14,4 @@ add_subdirectory(common)
 
 add_subdirectory(01-init)
 add_subdirectory(02-ray-payload)
+add_subdirectory(03-sbt-data)

@@ -6,6 +6,11 @@ class CudaBuffer {
 public:
     CUdeviceptr DevicePtr() const;
 
+    template<typename T>
+    T *TypedPtr() const {
+        return static_cast<T *>(ptr_);
+    }
+
     size_t Size() const;
 
     void Resize(size_t size);

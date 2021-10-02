@@ -24,3 +24,6 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
    1. add 2 cubes and build the acceleration structure
    2. generate ray and call `optixTrace` in raygen program
    3. show color based on primitive ID in closesthit and miss program
+3. simple SBT data
+   1. add a hard-coded color and mesh data (vertices & indices) in hit group record
+   2. fetch these data in closesthit program and shade mesh with color * ndotv (assume camera is also a point light)
