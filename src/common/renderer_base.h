@@ -35,7 +35,10 @@ protected:
 
     virtual void Render() = 0;
 
-    friend void GlfwWindowResizeFunc(GLFWwindow* window, int width, int height);
+    virtual void OnMouse(double x, double y, uint8_t state) {}
+
+    friend void GlfwWindowResizeFunc(GLFWwindow *window, int width, int height);
+    friend void GlfwWindowCursorPosFunc(GLFWwindow *window, double x, double y);
 
     CUcontext cuda_context_;
     CUstream cuda_stream_;

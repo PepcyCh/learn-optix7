@@ -43,6 +43,21 @@ void GlfwWindowResizeFunc(GLFWwindow *window, int width, int height) {
     app->Resize(width, height);
 }
 
+void GlfwWindowCursorPosFunc(GLFWwindow *window, double x, double y) {
+    auto *app = static_cast<OptixApp *>(glfwGetWindowUserPointer(window));
+    uint8_t state = 0;
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        state |= 1;
+    }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        state |= 2;
+    }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
+        state |= 4;
+    }
+    app->OnMouse(x, y, state);
+}
+
 OptixApp::OptixApp(int width, int height, std::string_view &&title) :
         color_buffer_width_(width), color_buffer_height_(height) {
     glfwSetErrorCallback(GlfwErrorLogFunc);
@@ -59,6 +74,7 @@ OptixApp::OptixApp(int width, int height, std::string_view &&title) :
 
     glfwSetWindowUserPointer(window_, this);
     glfwSetFramebufferSizeCallback(window_, GlfwWindowResizeFunc);
+    glfwSetCursorPosCallback(window_, GlfwWindowCursorPosFunc);
 
     InitGl();
 

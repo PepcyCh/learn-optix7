@@ -13,3 +13,4 @@ configure_file(
 add_subdirectory(common)
 
 add_subdirectory(01-init)
+add_subdirectory(02-ray-payload)

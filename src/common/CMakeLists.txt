@@ -2,10 +2,14 @@ add_library(optix_common
     check_macros.h
     cuda_buffer.cpp
     cuda_buffer.h
+    cuda_macro_utils.h
     frame_counter.h
     frame_counter.cpp
+    geometry.h
+    geometry.cpp
     renderer_base.cpp
     renderer_base.h
+    math/vec.h
 )
 
 target_compile_features(optix_common

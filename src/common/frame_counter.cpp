@@ -1,9 +1,11 @@
 #include "frame_counter.h"
 
+namespace chrono = std::chrono;
+
 void FrameCounter::Reset() {
     frame_count_ = 0;
 
-    base_time_ = std::chrono::high_resolution_clock::now();
+    base_time_ = chrono::high_resolution_clock::now();
     prev_time_ = base_time_;
     delta_time_ = 0.0;
 }
@@ -11,8 +13,8 @@ void FrameCounter::Reset() {
 void FrameCounter::Tick() {
     frame_count_ += 1;
 
-    const auto curr_time = std::chrono::high_resolution_clock::now();
-    const std::chrono::duration<double> delta = curr_time - prev_time_;
+    const auto curr_time = chrono::high_resolution_clock::now();
+    const chrono::duration<double> delta = curr_time - prev_time_;
     delta_time_ = delta.count();
     prev_time_ = curr_time;
 
@@ -26,7 +28,7 @@ void FrameCounter::Tick() {
 }
 
 double FrameCounter::TotalTime() const {
-    const std::chrono::duration<double> delta = prev_time_ - base_time_;
+    const chrono::duration<double> delta = prev_time_ - base_time_;
     return delta.count();
 }
 
