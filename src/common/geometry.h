@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <string_view>
+
 #include "math/vec.h"
 
 class GeometryUtils {
@@ -19,4 +21,6 @@ public:
     };
 
     static MeshData Cube(float w, float h, float d);
+
+    static std::vector<MeshData> LoadObj(std::string_view &&filename);
 };

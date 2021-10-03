@@ -14,6 +14,7 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
 * [glfw3](https://github.com/glfw/glfw)
 * [ImGui](https://github.com/ocornut/imgui)
 * [fmt](https://github.com/fmtlib/fmt)
+* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
 
 ## Contents
 
@@ -27,3 +28,7 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
 3. simple SBT data
    1. add a hard-coded color and mesh data (vertices & indices) in hit group record
    2. fetch these data in closesthit program and shade mesh with color * ndotv (assume camera is also a point light)
+4. multiple meshes
+   1. use multiple hit group record to store data for different mesh
+   2. load sponza.obj and show different mesh with random color (the model can be downloaded from [here](https://casual-effects.com/data/))
+

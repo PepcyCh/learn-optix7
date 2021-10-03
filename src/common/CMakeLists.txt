@@ -21,5 +21,5 @@ target_include_directories(optix_common
 )
 
 target_link_libraries(optix_common
-    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt glfw glad imgui::imgui
+    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt glfw glad imgui::imgui tinyobjloader::tinyobjloader
 )

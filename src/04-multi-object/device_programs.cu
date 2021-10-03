@@ -21,11 +21,11 @@ OPTIX_CLOSESTHIT(Radiance)() {
     const Vec3 &p1 = mesh_data->vertex[i1];
     const Vec3 &p2 = mesh_data->vertex[i2];
     const Vec3 norm = Vec3(p1 - p0).Cross(p2 - p0).Normalize();
-
+    
     const Vec3 ray_dir = GetWorldRayDirection();
 
     const float dot = max(norm.Dot(-ray_dir), 0.0f);
-
+    
     payload->color = mesh_data->color * (dot * 0.9f + 0.1f); // avoid black ...
 }
 

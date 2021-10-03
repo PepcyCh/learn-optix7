@@ -9,5 +9,6 @@ cmake-build*
 out
 
 defines.h
+models
 
 *.ptx

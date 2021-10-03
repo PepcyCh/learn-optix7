@@ -297,6 +297,7 @@ private:
             accel_buffer_.Size(),
             &accel_handle
         ));
+        CUDA_CHECK(cudaDeviceSynchronize());
 
         output_buffer.Free();
         temp_buffer.Free();

@@ -1,6 +1,6 @@
 #include <fstream>
 #include <numbers>
-#include <ranges>
+#include <random>
 #include <vector>
 
 #include "cuda_runtime.h"
@@ -15,7 +15,6 @@
 
 namespace numbers = std::numbers;
 namespace ranges = std::ranges;
-namespace views = std::views;
 
 struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord {
     alignas(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
@@ -32,9 +31,17 @@ struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord {
     TriMeshData data;
 };
 
-class OptixSbtData : public OptixApp {
+struct MeshData {
+    std::vector<Vec3> vertex_data;
+    std::vector<uint32_t> index_data;
+    CudaBuffer vertex_buffer;
+    CudaBuffer index_buffer;
+    Vec3 color;
+};
+
+class OptixMultiObject : public OptixApp {
 public:
-    OptixSbtData(int width, int height, std::string_view &&title) : OptixApp(width, height, std::move(title)) {}
+    OptixMultiObject(int width, int height, std::string_view &&title) : OptixApp(width, height, std::move(title)) {}
 
     bool Initialize() override {
         if (!OptixApp::Initialize()) {
@@ -60,23 +67,26 @@ public:
     
 private:
     void BuildGeometries() {
-        AddMeshData(GeometryUtils::Cube(10.0f, 0.1f, 10.0f), Vec3(0.0f, -1.5f, 0.0f));
-        AddMeshData(GeometryUtils::Cube(2.0f, 2.0f, 2.0f), Vec3(0.0f, 0.0f, 0.0f));
+        std::mt19937 rng;
+        const std::uniform_real_distribution uni_dist(0.0f, 1.0f);
 
-        vertex_buffer_.AllocAndUpload(vertex_data_.data(), vertex_data_.size() * sizeof(Vec3));
-        index_buffer_.AllocAndUpload(index_data_.data(), index_data_.size() * sizeof(uint32_t));
+        const auto meshes = GeometryUtils::LoadObj(fmt::format("{}models/sponza.obj", PROJECT_ROOT_DIR));
+        for (const auto &mesh : meshes) {
+            Vec3 color(uni_dist(rng), uni_dist(rng), uni_dist(rng));
+            AddMeshData(mesh, Vec3::kZero, color);
+        }
     }
 
-    void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate) {
-        const uint32_t first_index = vertex_data_.size();
-        ranges::copy(
-            mesh.vertices | views::transform([translate](const auto &v) { return v.pos + translate; }),
-            std::back_inserter(vertex_data_)
-        );
-        ranges::copy(
-            mesh.indices | views::transform([first_index](uint32_t index) { return index + first_index; }),
-            std::back_inserter(index_data_)
-        );
+    void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate, const Vec3 &color) {
+        MeshData data{};
+        ranges::transform(mesh.vertices, std::back_inserter(data.vertex_data),
+            [translate](const auto &v) { return v.pos + translate; });
+        ranges::copy(mesh.indices, std::back_inserter(data.index_data));
+        data.vertex_buffer.AllocAndUpload(data.vertex_data.data(), data.vertex_data.size() * sizeof(Vec3));
+        data.index_buffer.AllocAndUpload(data.index_data.data(), data.index_data.size() * sizeof(uint32_t));
+        data.color = color;
+
+        meshes_.emplace_back(data);
     }
 
     void CreateModule() {
@@ -94,7 +104,7 @@ private:
 
         pipeline_link_options_.maxTraceDepth = 2;
 
-        std::ifstream ptx_fin(fmt::format("{}03-sbt-data/device_programs.ptx", PROJECT_SRC_DIR));
+        std::ifstream ptx_fin(fmt::format("{}04-multi-object/device_programs.ptx", PROJECT_SRC_DIR));
         const std::string ptx_str((std::istreambuf_iterator<char>(ptx_fin)), std::istreambuf_iterator<char>());
 
         char log[2048];
@@ -220,37 +230,46 @@ private:
         sbt_.missRecordStrideInBytes = sizeof(MissRecord);
         sbt_.missRecordCount = 1;
 
-        HitgroupRecord hitgroup_record;
-        OPTIX_CHECK(optixSbtRecordPackHeader(hitgroup_pg_, &hitgroup_record));
-        hitgroup_record.data.color = Vec3(0.0f, 1.0f, 0.0f);
-        hitgroup_record.data.vertex = vertex_buffer_.TypedPtr<Vec3>();
-        hitgroup_record.data.index = index_buffer_.TypedPtr<uint32_t>();
-        hitgroups_records_buffer_.AllocAndUpload(&hitgroup_record, sizeof(hitgroup_record));
+        std::vector<HitgroupRecord> hitgroup_records(meshes_.size());
+        for (size_t i = 0; i < meshes_.size(); i++) {
+            OPTIX_CHECK(optixSbtRecordPackHeader(hitgroup_pg_, &hitgroup_records[i]));
+            hitgroup_records[i].data.color = meshes_[i].color;
+            hitgroup_records[i].data.vertex = meshes_[i].vertex_buffer.TypedPtr<Vec3>();
+            hitgroup_records[i].data.index = meshes_[i].index_buffer.TypedPtr<uint32_t>();
+        }
+        hitgroups_records_buffer_.AllocAndUpload(
+            hitgroup_records.data(),
+            hitgroup_records.size() * sizeof(HitgroupRecord)
+        );
         sbt_.hitgroupRecordBase = hitgroups_records_buffer_.DevicePtr();
         sbt_.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
-        sbt_.hitgroupRecordCount = 1;
+        sbt_.hitgroupRecordCount = hitgroup_records.size();
     }
 
     OptixTraversableHandle BuildAccel() {
         OptixTraversableHandle accel_handle = 0;
 
-        OptixBuildInput input = {};
-        input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-        CUdeviceptr vertex_buffer_ptr = vertex_buffer_.DevicePtr();
-        input.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-        input.triangleArray.vertexStrideInBytes = sizeof(Vec3);
-        input.triangleArray.numVertices = vertex_data_.size();
-        input.triangleArray.vertexBuffers = &vertex_buffer_ptr;
-        input.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-        input.triangleArray.indexStrideInBytes = sizeof(uint32_t) * 3;
-        input.triangleArray.numIndexTriplets = index_data_.size() / 3;
-        input.triangleArray.indexBuffer = index_buffer_.DevicePtr();
-        uint32_t input_flags[] = {0};
-        input.triangleArray.flags = input_flags;
-        input.triangleArray.numSbtRecords = 1;
-        input.triangleArray.sbtIndexOffsetBuffer = 0;
-        input.triangleArray.sbtIndexOffsetSizeInBytes = 0;
-        input.triangleArray.sbtIndexOffsetStrideInBytes = 0;
+        const uint32_t input_flags[] = { 0 };
+        std::vector<CUdeviceptr> vertex_buffer_ptrs(meshes_.size());
+        std::vector<OptixBuildInput> inputs(meshes_.size());
+        for (size_t i = 0; i < meshes_.size(); i++) {
+            vertex_buffer_ptrs[i] = meshes_[i].vertex_buffer.DevicePtr();
+
+            inputs[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+            inputs[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+            inputs[i].triangleArray.vertexStrideInBytes = sizeof(Vec3);
+            inputs[i].triangleArray.numVertices = meshes_[i].vertex_data.size();
+            inputs[i].triangleArray.vertexBuffers = &vertex_buffer_ptrs[i];
+            inputs[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+            inputs[i].triangleArray.indexStrideInBytes = sizeof(uint32_t) * 3;
+            inputs[i].triangleArray.numIndexTriplets = meshes_[i].index_data.size() / 3;
+            inputs[i].triangleArray.indexBuffer = meshes_[i].index_buffer.DevicePtr();
+            inputs[i].triangleArray.flags = input_flags;
+            inputs[i].triangleArray.numSbtRecords = 1;
+            inputs[i].triangleArray.sbtIndexOffsetBuffer = 0;
+            inputs[i].triangleArray.sbtIndexOffsetSizeInBytes = 0;
+            inputs[i].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+        }
 
         OptixAccelBuildOptions options = {};
         options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
@@ -258,7 +277,13 @@ private:
         options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
         OptixAccelBufferSizes buffer_sizes;
-        OPTIX_CHECK(optixAccelComputeMemoryUsage(optix_context_, &options, &input, 1, &buffer_sizes));
+        OPTIX_CHECK(optixAccelComputeMemoryUsage(
+            optix_context_,
+            &options,
+            inputs.data(),
+            inputs.size(),
+            &buffer_sizes
+        ));
 
         CudaBuffer compacted_size_buffer;
         compacted_size_buffer.Alloc(sizeof(uint64_t));
@@ -275,8 +300,8 @@ private:
             optix_context_,
             nullptr,
             &options,
-            &input,
-            1,
+            inputs.data(),
+            inputs.size(),
             temp_buffer.DevicePtr(),
             temp_buffer.Size(),
             output_buffer.DevicePtr(),
@@ -351,20 +376,22 @@ private:
         } else if (state & 2) {
             const float dx = 0.005 * (x - last_mouse_x_);
             const float dy = 0.005 * (y - last_mouse_y_);
-            camera_radius_ += dx - dy;
-            camera_radius_ = std::clamp(camera_radius_, 5.0f, 150.0f);
+            camera_radius_ += (dx - dy) * 50.0f;
+            camera_radius_ = std::clamp(camera_radius_, 5.0f, 15000.0f);
         }
         last_mouse_x_ = x;
         last_mouse_y_ = y;
 
-        UpdateCamera();
+        if (state & 3) {
+            UpdateCamera();
+        }
     }
 
     void UpdateCamera() {
         const float x = camera_radius_ * std::sin(camera_phi_) * std::cos(camera_theta_);
         const float y = camera_radius_ * std::cos(camera_phi_);
         const float z = camera_radius_ * std::sin(camera_phi_) * std::sin(camera_theta_);
-        launch_params_.camera.position = Vec3(x, y, z);
+        launch_params_.camera.position = Vec3(x, y, z) + camera_look_at_;
         launch_params_.camera.direction = (-Vec3(x, y, z)).Normalize();
 
         const float twice_tan_half_fov = 2.0f * std::tan(camera_fov_ * 0.5f);
@@ -394,12 +421,10 @@ private:
 
     CudaBuffer accel_buffer_;
 
-    std::vector<Vec3> vertex_data_;
-    std::vector<uint32_t> index_data_;
-    CudaBuffer vertex_buffer_;
-    CudaBuffer index_buffer_;
+    std::vector<MeshData> meshes_;
 
-    float camera_radius_ = 15.0f;
+    Vec3 camera_look_at_ = Vec3(0.0f, -100.0f, 0.0f);
+    float camera_radius_ = 2000.0f;
     float camera_theta_ = numbers::pi_v<float> * 0.25f;
     float camera_phi_ = numbers::pi_v<float> * 0.25f;
     float camera_fov_ = numbers::pi_v<float> * 0.25f;
@@ -412,7 +437,7 @@ private:
 
 int main() {
     try {
-        OptixSbtData app(1200, 900, "Learn OptiX 7");
+        OptixMultiObject app(1200, 900, "Learn OptiX 7");
         if (!app.Initialize()) {
             fmt::print(stderr, "Failed to initialize\n");
             return -1;
