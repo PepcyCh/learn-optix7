@@ -11,9 +11,10 @@ One may download and install these through site of NVIDIA.
 
 One may install these dependencies manually or use [vcpkg](https://github.com/microsoft/vcpkg).
 
+* [fmt](https://github.com/fmtlib/fmt)
 * [glfw3](https://github.com/glfw/glfw)
 * [ImGui](https://github.com/ocornut/imgui)
-* [fmt](https://github.com/fmtlib/fmt)
+* [stb](https://github.com/nothings/stb)
 * [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
 
 ## Contents
@@ -31,4 +32,6 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
 4. multiple meshes
    1. use multiple hit group record to store data for different mesh
    2. load sponza.obj and show different mesh with random color (the model can be downloaded from [here](https://casual-effects.com/data/))
+5. textures
+   1. texture map with CUDA texture
 

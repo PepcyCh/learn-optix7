@@ -79,8 +79,8 @@ private:
 
     void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate, const Vec3 &color) {
         MeshData data{};
-        ranges::transform(mesh.vertices, std::back_inserter(data.vertex_data),
-            [translate](const auto &v) { return v.pos + translate; });
+        ranges::transform(mesh.positions, std::back_inserter(data.vertex_data),
+            [translate](const auto &pos) { return pos + translate; });
         ranges::copy(mesh.indices, std::back_inserter(data.index_data));
         data.vertex_buffer.AllocAndUpload(data.vertex_data.data(), data.vertex_data.size() * sizeof(Vec3));
         data.index_buffer.AllocAndUpload(data.index_data.data(), data.index_data.size() * sizeof(uint32_t));

@@ -8,16 +8,11 @@
 
 class GeometryUtils {
 public:
-    struct Vertex {
-        Vec3 pos;
-        Vec3 norm;
-        Vec3 tan;
-        Vec2 uv;
-    };
-
     struct MeshData {
+        std::vector<Vec3> positions;
+        std::vector<Vec3> normals;
+        std::vector<Vec2> uvs;
         std::vector<uint32_t> indices;
-        std::vector<Vertex> vertices;
     };
 
     static MeshData Cube(float w, float h, float d);

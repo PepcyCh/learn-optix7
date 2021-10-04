@@ -3,12 +3,18 @@ add_library(optix_common
     cuda_buffer.cpp
     cuda_buffer.h
     cuda_macro_utils.h
+    cuda_texture.cpp
+    cuda_texture.h
     frame_counter.h
     frame_counter.cpp
     geometry.h
     geometry.cpp
     renderer_base.cpp
     renderer_base.h
+    scene.cpp
+    scene.h
+    texture.cpp
+    texture.h
     math/vec.h
 )
 
@@ -21,5 +27,11 @@ target_include_directories(optix_common
 )
 
 target_link_libraries(optix_common
-    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt glfw glad imgui::imgui tinyobjloader::tinyobjloader
+    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt
+    PRIVATE glfw glad imgui::imgui tinyobjloader::tinyobjloader
+)
+
+find_path(STB_INCLUDE_DIRS "stb.h")
+target_include_directories(optix_common
+    PRIVATE ${STB_INCLUDE_DIRS}
 )

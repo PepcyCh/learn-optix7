@@ -67,7 +67,7 @@ private:
     void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate) {
         const uint32_t first_index = vertex_data_.size();
         ranges::copy(
-            mesh.vertices | views::transform([translate](const auto &v) { return v.pos + translate; }),
+            mesh.positions | views::transform([translate](const auto &pos) { return pos + translate; }),
             std::back_inserter(vertex_data_)
         );
         ranges::copy(

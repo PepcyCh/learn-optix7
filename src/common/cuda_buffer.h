@@ -19,9 +19,9 @@ public:
 
     void Free();
 
-    void Upload(void *data, size_t size) const;
+    void Upload(const void *data, size_t size) const;
 
-    void AllocAndUpload(void *data, size_t size);
+    void AllocAndUpload(const void *data, size_t size);
 
     void Download(void *receiver, size_t size) const;
 

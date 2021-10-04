@@ -33,13 +33,13 @@ void CudaBuffer::Free() {
     ptr_ = nullptr;
 }
 
-void CudaBuffer::Upload(void *data, size_t size) const {
+void CudaBuffer::Upload(const void *data, size_t size) const {
     assert(ptr_ != nullptr);
     assert(size <= size_);
     CUDA_CHECK(cudaMemcpy(ptr_, data, size, cudaMemcpyHostToDevice));
 }
 
-void CudaBuffer::AllocAndUpload(void *data, size_t size) {
+void CudaBuffer::AllocAndUpload(const void *data, size_t size) {
     Alloc(size);
     Upload(data, size);
 }
