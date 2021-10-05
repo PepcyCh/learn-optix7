@@ -34,4 +34,8 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
    2. load sponza.obj and show different mesh with random color (the model can be downloaded from [here](https://casual-effects.com/data/))
 5. textures
    1. texture map with CUDA texture
+6. hard shadow
+   1. add second ray type - shadow ray
+   2. use miss program to determine whether it is shadowed or not
+   3. a moving point light
 

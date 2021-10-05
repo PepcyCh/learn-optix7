@@ -1,0 +1,21 @@
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.cu
+    COMMAND nvcc ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.cu
+        -ptx -o ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx
+        -I ${OptiX_ROOT_DIR}/include -I ${PROJECT_SOURCE_DIR}/src/common
+)
+
+add_executable(06-shadow
+    main.cpp
+    launch_params.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx
+)
+
+target_compile_features(06-shadow
+    PRIVATE cxx_std_20
+)
+
+target_link_libraries(06-shadow
+    PRIVATE optix_common
+)
