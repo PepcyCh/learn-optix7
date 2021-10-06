@@ -38,4 +38,8 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
    1. add second ray type - shadow ray
    2. use miss program to determine whether it is shadowed or not
    3. a moving point light
+7. soft shadow
+   1. static lighting meshes instead of point lights
+   2. importance sampling to light with respect to light strength * triangle area using alias method
+   3. accumulate history frames when camera is not moving
 

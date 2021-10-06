@@ -5,10 +5,14 @@ add_library(optix_common
     cuda_macro_utils.h
     cuda_texture.cpp
     cuda_texture.h
-    frame_counter.h
     frame_counter.cpp
-    geometry.h
+    frame_counter.h
     geometry.cpp
+    geometry.h
+    lights.cpp
+    lights.h
+    light_data.h
+    random.h
     renderer_base.cpp
     renderer_base.h
     scene.cpp

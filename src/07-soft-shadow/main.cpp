@@ -11,6 +11,7 @@
 #include "cuda_buffer.h"
 #include "cuda_texture.h"
 #include "launch_params.h"
+#include "lights.h"
 #include "renderer_base.h"
 #include "scene.h"
 
@@ -39,9 +40,9 @@ struct MeshBuffer {
     CudaBuffer index_buffer;
 };
 
-class OptixShadow : public OptixApp {
+class OptixSoftShadow : public OptixApp {
 public:
-    OptixShadow(int width, int height, std::string_view &&title) : OptixApp(width, height, std::move(title)) {}
+    OptixSoftShadow(int width, int height, std::string_view &&title) : OptixApp(width, height, std::move(title)) {}
 
     bool Initialize() override {
         if (!OptixApp::Initialize()) {
@@ -49,18 +50,19 @@ public:
         }
 
         BuildScene();
+        BuildLights();
         CreateModule();
         CreatePrograms();
         CreatePipeline();
         BuildSbt();
+
+        prev_color_buffer_.Alloc(4 * sizeof(float) * color_buffer_width_ * color_buffer_height_);
         
         UpdateCamera();
-        launch_params_.frame.id = 0;
         launch_params_.frame.width = color_buffer_width_;
         launch_params_.frame.height = color_buffer_height_;
         launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
         launch_params_.traversable = BuildAccel();
-        launch_params_.light.strength = Vec3(1000.0f, 1000.0f, 1000.0f);
 
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
@@ -99,6 +101,23 @@ private:
         }
     }
 
+    void BuildLights() {
+        lights_.AddMesh(
+            GeometryUtils::Cube(25.0f, 2.0f, 25.0f),
+            Vec3(10000.0f, 10000.0f, 10000.0f),
+            Vec3(-907.108f, 2205.875f, -400.0267f)
+        );
+
+        lights_.BuildAliasTable();
+
+        lights_vertex_buffer_.AllocAndUpload(lights_.vertices.data(), lights_.vertices.size() * sizeof(Vec3));
+        lights_data_buffer_.AllocAndUpload(lights_.lights.data(), lights_.lights.size() * sizeof(LightData));
+
+        launch_params_.light.light_count = lights_.lights.size();
+        launch_params_.light.vertex = lights_vertex_buffer_.TypedPtr<Vec3>();
+        launch_params_.light.data = lights_data_buffer_.TypedPtr<LightData>();
+    }
+
     void CreateModule() {
         module_compile_options_.maxRegisterCount = 50;
         module_compile_options_.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -114,7 +133,7 @@ private:
 
         pipeline_link_options_.maxTraceDepth = 2;
 
-        std::ifstream ptx_fin(fmt::format("{}06-shadow/device_programs.ptx", PROJECT_SRC_DIR));
+        std::ifstream ptx_fin(fmt::format("{}07-soft-shadow/device_programs.ptx", PROJECT_SRC_DIR));
         const std::string ptx_str((std::istreambuf_iterator<char>(ptx_fin)), std::istreambuf_iterator<char>());
 
         char log[2048];
@@ -413,7 +432,6 @@ private:
         }
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
-        launch_params_.frame.id += 1;
 
         OPTIX_CHECK(optixLaunch(
             pipeline_,
@@ -431,9 +449,10 @@ private:
 
     bool Resize(int width, int height) override {
         if (OptixApp::Resize(width, height)) {
+            prev_color_buffer_.Resize(4 * sizeof(float) * width * height);
+
             launch_params_.frame.width = width;
             launch_params_.frame.height = height;
-            launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
             UpdateCamera();
             return true;
         }
@@ -441,11 +460,19 @@ private:
     }
 
     void Update() override {
-        launch_params_.light.position = Vec3(
-            light_radius_ * std::cos(frame_counter_.TotalTime()),
-            light_height_,
-            light_radius_ * std::sin(frame_counter_.TotalTime())
-        );
+        launch_params_.frame.curr_time = frame_counter_.TotalTime() * 1000.0;
+
+        accum_frame_count_ += 1;
+        launch_params_.frame.accum_weight = 1.0f / accum_frame_count_;
+
+        if (accum_frame_is_prev_) {
+            launch_params_.frame.color_buffer = prev_color_buffer_.TypedPtr<Vec4>();
+            launch_params_.frame.prev_color_buffer = color_buffer_.TypedPtr<Vec4>();
+        } else {
+            launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
+            launch_params_.frame.prev_color_buffer = prev_color_buffer_.TypedPtr<Vec4>();
+        }
+        accum_frame_is_prev_ = !accum_frame_is_prev_;
     }
 
     void OnMouse(double x, double y, uint8_t state) override {
@@ -482,6 +509,8 @@ private:
             twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(Vec3::kY).Normalize();
         launch_params_.camera.up =
             twice_tan_half_fov * launch_params_.camera.right.Cross(launch_params_.camera.direction).Normalize();
+
+        accum_frame_count_ = 0;
     }
 
     OptixPipeline pipeline_;
@@ -506,6 +535,13 @@ private:
     Scene scene_;
     std::vector<MeshBuffer> meshes_buffers_;
     std::vector<CudaTexture> scene_textures_;
+    Lights lights_;
+    CudaBuffer lights_vertex_buffer_;
+    CudaBuffer lights_data_buffer_;
+
+    CudaBuffer prev_color_buffer_;
+    uint32_t accum_frame_count_ = 0;
+    bool accum_frame_is_prev_ = false;
 
     Vec3 camera_look_at_ = Vec3(0.0f, -100.0f, 0.0f);
     float camera_radius_ = 2000.0f;
@@ -515,16 +551,13 @@ private:
     double last_mouse_x_ = 0.0;
     double last_mouse_y_ = 0.0;
 
-    float light_radius_ = 990.0f;
-    float light_height_ = 2400.0f;
-
     LaunchParams launch_params_ = {};
     CudaBuffer launch_params_buffer_;
 };
 
 int main() {
     try {
-        OptixShadow app(1200, 900, "Learn OptiX 7");
+        OptixSoftShadow app(1200, 900, "Learn OptiX 7");
         if (!app.Initialize()) {
             fmt::print(stderr, "Failed to initialize\n");
             return -1;
