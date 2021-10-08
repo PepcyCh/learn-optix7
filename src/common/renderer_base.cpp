@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "cuda_runtime.h"
+#include "cuda_gl_interop.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -131,7 +132,7 @@ bool OptixApp::Initialize() {
 
     CreateContext();
 
-    color_buffer_.Alloc(4 * sizeof(float) * color_buffer_width_ * color_buffer_height_);
+    color_buffer_.Init(color_buffer_width_, color_buffer_height_, 4 * sizeof(float), GL_RGBA, GL_FLOAT);
 
     return true;
 }
@@ -159,21 +160,8 @@ void OptixApp::MainLoop() {
 
         Render();
 
-        const size_t data_size = 4 * sizeof(float) * color_buffer_width_ * color_buffer_height_;
-        std::vector<uint8_t> data(data_size);
-        color_buffer_.Download(data.data(), data_size);
-        glTexSubImage2D(
-            GL_TEXTURE_2D,
-            0,
-            0,
-            0,
-            color_buffer_width_,
-            color_buffer_height_,
-            GL_RGBA,
-            GL_FLOAT,
-            data.data()
-        );
-
+        color_buffer_.UnpackTo(screen_tex_);
+        glBindTexture(GL_TEXTURE_2D, screen_tex_);
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -227,7 +215,7 @@ bool OptixApp::Resize(int width, int height) {
         color_buffer_width_ = width;
         color_buffer_height_ = height;
 
-        color_buffer_.Resize(4 * sizeof(float) * width * height);
+        color_buffer_.Resize(width, height, 4 * sizeof(float), GL_RGBA, GL_FLOAT);
 
         glViewport(0, 0, width, height);
 

@@ -3,11 +3,12 @@
 #include <string_view>
 
 #include "cuda.h"
+#include "cuda_texture.h"
 #include "GLFW/glfw3.h"
 #include "optix.h"
 
-#include "cuda_buffer.h"
 #include "frame_counter.h"
+#include "pixel_buffer.h"
 
 class OptixApp {
 public:
@@ -46,7 +47,7 @@ protected:
 
     int color_buffer_width_;
     int color_buffer_height_;
-    CudaBuffer color_buffer_;
+    PixelUnpackBuffer color_buffer_;
 
     GLFWwindow *window_;
     unsigned int screen_tex_;

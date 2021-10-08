@@ -42,7 +42,6 @@ public:
         launch_params_.frame_id = 0;
         launch_params_.frame_width = color_buffer_width_;
         launch_params_.frame_height = color_buffer_height_;
-        launch_params_.color_buffer = color_buffer_.TypedPtr<float>();
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
         return true;
@@ -203,6 +202,7 @@ private:
         if (launch_params_.frame_width == 0 || launch_params_.frame_height == 0) {
             return;
         }
+        launch_params_.color_buffer = color_buffer_.TypedMap<float>();
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
         launch_params_.frame_id += 1;
@@ -219,13 +219,14 @@ private:
         ));
 
         CUDA_CHECK(cudaDeviceSynchronize());
+
+        color_buffer_.Unmap();
     }
 
     bool Resize(int width, int height) override {
         if (OptixApp::Resize(width, height)) {
             launch_params_.frame_width = width;
             launch_params_.frame_height = height;
-            launch_params_.color_buffer = color_buffer_.TypedPtr<float>();
             return true;
         }
         return false;

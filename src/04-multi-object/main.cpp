@@ -58,7 +58,6 @@ public:
         launch_params_.frame.id = 0;
         launch_params_.frame.width = color_buffer_width_;
         launch_params_.frame.height = color_buffer_height_;
-        launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
         launch_params_.traversable = BuildAccel();
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
@@ -337,6 +336,7 @@ private:
         if (launch_params_.frame.width == 0 || launch_params_.frame.height == 0) {
             return;
         }
+        launch_params_.frame.color_buffer = color_buffer_.TypedMap<Vec4>();
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
         launch_params_.frame.id += 1;
@@ -353,13 +353,14 @@ private:
         ));
 
         CUDA_CHECK(cudaDeviceSynchronize());
+
+        color_buffer_.Unmap();
     }
 
     bool Resize(int width, int height) override {
         if (OptixApp::Resize(width, height)) {
             launch_params_.frame.width = width;
             launch_params_.frame.height = height;
-            launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
             UpdateCamera();
             return true;
         }

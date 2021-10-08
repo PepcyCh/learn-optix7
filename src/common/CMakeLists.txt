@@ -12,6 +12,8 @@ add_library(optix_common
     lights.cpp
     lights.h
     light_data.h
+    pixel_buffer.cpp
+    pixel_buffer.h
     random.h
     renderer_base.cpp
     renderer_base.h

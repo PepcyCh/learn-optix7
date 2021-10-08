@@ -56,12 +56,11 @@ public:
         CreatePipeline();
         BuildSbt();
 
-        prev_color_buffer_.Alloc(4 * sizeof(float) * color_buffer_width_ * color_buffer_height_);
+        prev_color_buffer_.Init(color_buffer_width_, color_buffer_height_, 4 * sizeof(float), GL_RGBA, GL_FLOAT);
         
         UpdateCamera();
         launch_params_.frame.width = color_buffer_width_;
         launch_params_.frame.height = color_buffer_height_;
-        launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
         launch_params_.traversable = BuildAccel();
 
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
@@ -445,11 +444,14 @@ private:
         ));
 
         CUDA_CHECK(cudaDeviceSynchronize());
+
+        color_buffer_.Unmap();
+        prev_color_buffer_.Unmap();
     }
 
     bool Resize(int width, int height) override {
         if (OptixApp::Resize(width, height)) {
-            prev_color_buffer_.Resize(4 * sizeof(float) * width * height);
+            prev_color_buffer_.Resize(width, height, 4 * sizeof(float), GL_RGBA, GL_FLOAT);
 
             launch_params_.frame.width = width;
             launch_params_.frame.height = height;
@@ -466,11 +468,11 @@ private:
         launch_params_.frame.accum_weight = 1.0f / accum_frame_count_;
 
         if (accum_frame_is_prev_) {
-            launch_params_.frame.color_buffer = prev_color_buffer_.TypedPtr<Vec4>();
-            launch_params_.frame.prev_color_buffer = color_buffer_.TypedPtr<Vec4>();
+            launch_params_.frame.color_buffer = prev_color_buffer_.TypedMap<Vec4>();
+            launch_params_.frame.prev_color_buffer = color_buffer_.TypedMap<Vec4>();
         } else {
-            launch_params_.frame.color_buffer = color_buffer_.TypedPtr<Vec4>();
-            launch_params_.frame.prev_color_buffer = prev_color_buffer_.TypedPtr<Vec4>();
+            launch_params_.frame.color_buffer = color_buffer_.TypedMap<Vec4>();
+            launch_params_.frame.prev_color_buffer = prev_color_buffer_.TypedMap<Vec4>();
         }
         accum_frame_is_prev_ = !accum_frame_is_prev_;
     }
@@ -539,7 +541,8 @@ private:
     CudaBuffer lights_vertex_buffer_;
     CudaBuffer lights_data_buffer_;
 
-    CudaBuffer prev_color_buffer_;
+    PixelUnpackBuffer prev_color_buffer_;
+    // CudaBuffer prev_color_buffer_;
     uint32_t accum_frame_count_ = 0;
     bool accum_frame_is_prev_ = false;
 
