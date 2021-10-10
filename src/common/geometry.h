@@ -4,14 +4,16 @@
 
 #include <string_view>
 
-#include "math/vec.h"
+#include "pcmath/pcmath.h"
+
+namespace pcm = pep::cuda_math;
 
 class GeometryUtils {
 public:
     struct MeshData {
-        std::vector<Vec3> positions;
-        std::vector<Vec3> normals;
-        std::vector<Vec2> uvs;
+        std::vector<pcm::Vec3> positions;
+        std::vector<pcm::Vec3> normals;
+        std::vector<pcm::Vec2> uvs;
         std::vector<uint32_t> indices;
     };
 

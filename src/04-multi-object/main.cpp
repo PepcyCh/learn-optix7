@@ -32,11 +32,11 @@ struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord {
 };
 
 struct MeshData {
-    std::vector<Vec3> vertex_data;
+    std::vector<pcm::Vec3> vertex_data;
     std::vector<uint32_t> index_data;
     CudaBuffer vertex_buffer;
     CudaBuffer index_buffer;
-    Vec3 color;
+    pcm::Vec3 color;
 };
 
 class OptixMultiObject : public OptixApp {
@@ -71,17 +71,17 @@ private:
 
         const auto meshes = GeometryUtils::LoadObj(fmt::format("{}models/sponza.obj", PROJECT_ROOT_DIR));
         for (const auto &mesh : meshes) {
-            Vec3 color(uni_dist(rng), uni_dist(rng), uni_dist(rng));
-            AddMeshData(mesh, Vec3::kZero, color);
+            pcm::Vec3 color(uni_dist(rng), uni_dist(rng), uni_dist(rng));
+            AddMeshData(mesh, pcm::Vec3::Zero(), color);
         }
     }
 
-    void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate, const Vec3 &color) {
+    void AddMeshData(const GeometryUtils::MeshData &mesh, const pcm::Vec3 &translate, const pcm::Vec3 &color) {
         MeshData data{};
         ranges::transform(mesh.positions, std::back_inserter(data.vertex_data),
             [translate](const auto &pos) { return pos + translate; });
         ranges::copy(mesh.indices, std::back_inserter(data.index_data));
-        data.vertex_buffer.AllocAndUpload(data.vertex_data.data(), data.vertex_data.size() * sizeof(Vec3));
+        data.vertex_buffer.AllocAndUpload(data.vertex_data.data(), data.vertex_data.size() * sizeof(pcm::Vec3));
         data.index_buffer.AllocAndUpload(data.index_data.data(), data.index_data.size() * sizeof(uint32_t));
         data.color = color;
 
@@ -233,7 +233,7 @@ private:
         for (size_t i = 0; i < meshes_.size(); i++) {
             OPTIX_CHECK(optixSbtRecordPackHeader(hitgroup_pg_, &hitgroup_records[i]));
             hitgroup_records[i].data.color = meshes_[i].color;
-            hitgroup_records[i].data.vertex = meshes_[i].vertex_buffer.TypedPtr<Vec3>();
+            hitgroup_records[i].data.vertex = meshes_[i].vertex_buffer.TypedPtr<pcm::Vec3>();
             hitgroup_records[i].data.index = meshes_[i].index_buffer.TypedPtr<uint32_t>();
         }
         hitgroups_records_buffer_.AllocAndUpload(
@@ -256,7 +256,7 @@ private:
 
             inputs[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
             inputs[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-            inputs[i].triangleArray.vertexStrideInBytes = sizeof(Vec3);
+            inputs[i].triangleArray.vertexStrideInBytes = sizeof(pcm::Vec3);
             inputs[i].triangleArray.numVertices = meshes_[i].vertex_data.size();
             inputs[i].triangleArray.vertexBuffers = &vertex_buffer_ptrs[i];
             inputs[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
@@ -336,7 +336,7 @@ private:
         if (launch_params_.frame.width == 0 || launch_params_.frame.height == 0) {
             return;
         }
-        launch_params_.frame.color_buffer = color_buffer_.TypedMap<Vec4>();
+        launch_params_.frame.color_buffer = color_buffer_.TypedMap<pcm::Vec4>();
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
         launch_params_.frame.id += 1;
@@ -392,13 +392,13 @@ private:
         const float x = camera_radius_ * std::sin(camera_phi_) * std::cos(camera_theta_);
         const float y = camera_radius_ * std::cos(camera_phi_);
         const float z = camera_radius_ * std::sin(camera_phi_) * std::sin(camera_theta_);
-        launch_params_.camera.position = Vec3(x, y, z) + camera_look_at_;
-        launch_params_.camera.direction = (-Vec3(x, y, z)).Normalize();
+        launch_params_.camera.position = pcm::Vec3(x, y, z) + camera_look_at_;
+        launch_params_.camera.direction = (-pcm::Vec3(x, y, z)).Normalize();
 
         const float twice_tan_half_fov = 2.0f * std::tan(camera_fov_ * 0.5f);
         const float aspect = static_cast<float>(color_buffer_width_) / color_buffer_height_;
         launch_params_.camera.right =
-            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(Vec3::kY).Normalize();
+            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(pcm::Vec3::UnitY()).Normalize();
         launch_params_.camera.up =
             twice_tan_half_fov * launch_params_.camera.right.Cross(launch_params_.camera.direction).Normalize();
     }
@@ -424,7 +424,7 @@ private:
 
     std::vector<MeshData> meshes_;
 
-    Vec3 camera_look_at_ = Vec3(0.0f, -100.0f, 0.0f);
+    pcm::Vec3 camera_look_at_ = pcm::Vec3(0.0f, -100.0f, 0.0f);
     float camera_radius_ = 2000.0f;
     float camera_theta_ = numbers::pi_v<float> * 0.25f;
     float camera_phi_ = numbers::pi_v<float> * 0.25f;

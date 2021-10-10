@@ -5,13 +5,13 @@
 
 namespace ranges = std::ranges;
 
-void Lights::AddMesh(const GeometryUtils::MeshData &mesh, const Vec3 &strength, const Vec3 &translate) {
+void Lights::AddMesh(const GeometryUtils::MeshData &mesh, const pcm::Vec3 &strength, const pcm::Vec3 &translate) {
     ranges::transform(mesh.positions, std::back_inserter(vertices),
-        [translate](const Vec3 &pos) { return pos + translate; });
+        [translate](const pcm::Vec3 &pos) { return pos + translate; });
     const int first_index = lights.size();
     for (size_t f = 0; f < mesh.indices.size() / 3; f++) {
         LightData data{};
-        data.index = IVec3(
+        data.index = pcm::IVec3(
             mesh.indices[3 * f] + first_index,
             mesh.indices[3 * f + 1] + first_index,
             mesh.indices[3 * f + 2] + first_index
@@ -24,10 +24,10 @@ void Lights::AddMesh(const GeometryUtils::MeshData &mesh, const Vec3 &strength, 
 void Lights::BuildAliasTable() {
     float sum = 0.0f;
     for (LightData &data : lights) {
-        const Vec3 p0 = vertices[data.index.X()];
-        const Vec3 p1 = vertices[data.index.Y()];
-        const Vec3 p2 = vertices[data.index.Z()];
-        const float area2 = Vec3(p1 - p0).Cross(p2 - p0).Length();
+        const pcm::Vec3 p0 = vertices[data.index.X()];
+        const pcm::Vec3 p1 = vertices[data.index.Y()];
+        const pcm::Vec3 p2 = vertices[data.index.Z()];
+        const float area2 = (p1 - p0).Cross(p2 - p0).Length();
         const float gray = 0.299f * data.strength.X() + 0.587f * data.strength.Y() + 0.114f * data.strength.Z();
         data.at_probability = area2 * gray;
         data.at_another_index = -1;

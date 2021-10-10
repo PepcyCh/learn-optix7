@@ -1,10 +1,12 @@
 #pragma once
 
-#include "math/vec.h"
+#include "pcmath/pcmath.h"
+
+namespace pcm = pep::cuda_math;
 
 struct LightData {
-    IVec3 index;
-    Vec3 strength;
+    pcm::IVec3 index;
+    pcm::Vec3 strength;
     int at_another_index;
     float at_probability;
 };

@@ -6,20 +6,20 @@
 __constant__ LaunchParams optix_launch_params;
 
 struct RayPayload {
-    Vec3 color;
+    pcm::Vec3 color;
 };
 
 OPTIX_CLOSESTHIT(Radiance)() {
     RayPayload *payload = GetRayPayload<RayPayload>();
     float val = optixGetPrimitiveIndex() / 32.0f;
-    payload->color = Vec3(val, val, val);
+    payload->color = pcm::Vec3(val, val, val);
 }
 
 OPTIX_ANYHIT(Radiance)() {}
 
 OPTIX_MISS(Radiance)() {
     RayPayload *payload = GetRayPayload<RayPayload>();
-    payload->color = Vec3(1.0f, 1.0f, 1.0f);
+    payload->color = pcm::Vec3(1.0f, 1.0f, 1.0f);
 }
 
 OPTIX_RAYGEN(RenderFrame)() {
@@ -33,7 +33,7 @@ OPTIX_RAYGEN(RenderFrame)() {
     const float v = 0.5f - (iy + 0.5f) / fr.height;
 
     RayPayload payload;
-    payload.color = Vec3::ZeroVec();
+    payload.color = pcm::Vec3::Zero();
 
     RayDesc ray;
     ray.origin = cam.position;
@@ -53,5 +53,5 @@ OPTIX_RAYGEN(RenderFrame)() {
     );
 
     const unsigned int buffer_index = ix + iy * fr.width;
-    fr.color_buffer[buffer_index] = Vec4(payload.color, 1.0f);
+    fr.color_buffer[buffer_index] = pcm::Vec4(payload.color, 1.0f);
 }

@@ -59,11 +59,11 @@ public:
     
 private:
     void BuildGeometries() {
-        AddMeshData(GeometryUtils::Cube(10.0f, 0.1f, 10.0f), Vec3(0.0f, -1.5f, 0.0f));
-        AddMeshData(GeometryUtils::Cube(2.0f, 2.0f, 2.0f), Vec3(0.0f, 0.0f, 0.0f));
+        AddMeshData(GeometryUtils::Cube(10.0f, 0.1f, 10.0f), pcm::Vec3(0.0f, -1.5f, 0.0f));
+        AddMeshData(GeometryUtils::Cube(2.0f, 2.0f, 2.0f), pcm::Vec3(0.0f, 0.0f, 0.0f));
     }
 
-    void AddMeshData(const GeometryUtils::MeshData &mesh, const Vec3 &translate) {
+    void AddMeshData(const GeometryUtils::MeshData &mesh, const pcm::Vec3 &translate) {
         const uint32_t first_index = vertex_data_.size();
         ranges::copy(
             mesh.positions | views::transform([translate](const auto &pos) { return pos + translate; }),
@@ -226,7 +226,7 @@ private:
     }
 
     OptixTraversableHandle BuildAccel() {
-        vertex_buffer_.AllocAndUpload(vertex_data_.data(), vertex_data_.size() * sizeof(Vec3));
+        vertex_buffer_.AllocAndUpload(vertex_data_.data(), vertex_data_.size() * sizeof(pcm::Vec3));
         index_buffer_.AllocAndUpload(index_data_.data(), index_data_.size() * sizeof(uint32_t));
 
         OptixTraversableHandle accel_handle = 0;
@@ -235,7 +235,7 @@ private:
         input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
         CUdeviceptr vertex_buffer_ptr = vertex_buffer_.DevicePtr();
         input.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-        input.triangleArray.vertexStrideInBytes = sizeof(Vec3);
+        input.triangleArray.vertexStrideInBytes = sizeof(pcm::Vec3);
         input.triangleArray.numVertices = vertex_data_.size();
         input.triangleArray.vertexBuffers = &vertex_buffer_ptr;
         input.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
@@ -309,7 +309,7 @@ private:
         if (launch_params_.frame.width == 0 || launch_params_.frame.height == 0) {
             return;
         }
-        launch_params_.frame.color_buffer = color_buffer_.TypedMap<Vec4>();
+        launch_params_.frame.color_buffer = color_buffer_.TypedMap<pcm::Vec4>();
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
         launch_params_.frame.id += 1;
@@ -363,13 +363,13 @@ private:
         const float x = camera_radius_ * std::sin(camera_phi_) * std::cos(camera_theta_);
         const float y = camera_radius_ * std::cos(camera_phi_);
         const float z = camera_radius_ * std::sin(camera_phi_) * std::sin(camera_theta_);
-        launch_params_.camera.position = Vec3(x, y, z);
-        launch_params_.camera.direction = (-Vec3(x, y, z)).Normalize();
+        launch_params_.camera.position = pcm::Vec3(x, y, z);
+        launch_params_.camera.direction = (-pcm::Vec3(x, y, z)).Normalize();
 
         const float twice_tan_half_fov = 2.0f * std::tan(camera_fov_ * 0.5f);
         const float aspect = static_cast<float>(color_buffer_width_) / color_buffer_height_;
         launch_params_.camera.right =
-            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(Vec3::kY).Normalize();
+            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(pcm::Vec3::UnitY()).Normalize();
         launch_params_.camera.up =
             twice_tan_half_fov * launch_params_.camera.right.Cross(launch_params_.camera.direction).Normalize();
     }
@@ -393,7 +393,7 @@ private:
 
     CudaBuffer accel_buffer_;
 
-    std::vector<Vec3> vertex_data_;
+    std::vector<pcm::Vec3> vertex_data_;
     std::vector<uint32_t> index_data_;
     CudaBuffer vertex_buffer_;
     CudaBuffer index_buffer_;

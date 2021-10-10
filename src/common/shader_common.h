@@ -1,6 +1,8 @@
 #pragma once
 
-#include "math/vec.h"
+#include "pcmath/pcmath.h"
+
+namespace pcm = pep::cuda_math;
 
 #define OPTIX_RAYGEN(name) extern "C" __global__ void __raygen__##name
 #define OPTIX_MISS(name) extern "C" __global__ void __miss__##name
@@ -8,9 +10,9 @@
 #define OPTIX_ANYHIT(name) extern "C" __global__ void __anyhit__##name
 
 struct RayDesc {
-    Vec3 origin;
+    pcm::Vec3 origin;
     float t_min;
-    Vec3 direction;
+    pcm::Vec3 direction;
     float t_max;
     float time;
 };
@@ -57,7 +59,7 @@ static __forceinline__ __device__ Payload *GetRayPayload() {
     return reinterpret_cast<Payload *>(ptr_addr);
 }
 
-static __forceinline__ __device__ Vec3 GetWorldRayDirection() {
+static __forceinline__ __device__ pcm::Vec3 GetWorldRayDirection() {
     float3 ray_dir = optixGetWorldRayDirection();
-    return Vec3(ray_dir.x, ray_dir.y, ray_dir.z);
+    return pcm::Vec3(ray_dir.x, ray_dir.y, ray_dir.z);
 }

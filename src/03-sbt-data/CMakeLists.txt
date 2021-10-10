@@ -2,8 +2,9 @@ add_custom_command(
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.cu
     COMMAND nvcc ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.cu
-        -ptx -o ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx
+        -ptx -o ${CMAKE_CURRENT_SOURCE_DIR}/device_programs.ptx -std=c++17
         -I ${OptiX_ROOT_DIR}/include -I ${PROJECT_SOURCE_DIR}/src/common
+        -I ${PROJECT_SOURCE_DIR}/external/pep-cuda-math/include
 )
 
 add_executable(03-sbt-data

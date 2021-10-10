@@ -6,7 +6,7 @@
 __constant__ LaunchParams optix_launch_params;
 
 struct RayPayload {
-    Vec3 color;
+    pcm::Vec3 color;
 };
 
 OPTIX_CLOSESTHIT(Radiance)() {
@@ -17,12 +17,12 @@ OPTIX_CLOSESTHIT(Radiance)() {
     const uint32_t i0 = mesh_data->index[prim_id * 3];
     const uint32_t i1 = mesh_data->index[prim_id * 3 + 1];
     const uint32_t i2 = mesh_data->index[prim_id * 3 + 2];
-    const Vec3 &p0 = mesh_data->vertex[i0];
-    const Vec3 &p1 = mesh_data->vertex[i1];
-    const Vec3 &p2 = mesh_data->vertex[i2];
-    const Vec3 norm = Vec3(p1 - p0).Cross(p2 - p0).Normalize();
+    const pcm::Vec3 &p0 = mesh_data->vertex[i0];
+    const pcm::Vec3 &p1 = mesh_data->vertex[i1];
+    const pcm::Vec3 &p2 = mesh_data->vertex[i2];
+    const pcm::Vec3 norm = (p1 - p0).Cross(p2 - p0).Normalize();
     
-    const Vec3 ray_dir = GetWorldRayDirection();
+    const pcm::Vec3 ray_dir = GetWorldRayDirection();
 
     const float dot = max(norm.Dot(-ray_dir), 0.0f);
     
@@ -33,7 +33,7 @@ OPTIX_ANYHIT(Radiance)() {}
 
 OPTIX_MISS(Radiance)() {
     RayPayload *payload = GetRayPayload<RayPayload>();
-    payload->color = Vec3(1.0f, 1.0f, 1.0f);
+    payload->color = pcm::Vec3(1.0f, 1.0f, 1.0f);
 }
 
 OPTIX_RAYGEN(RenderFrame)() {
@@ -47,7 +47,7 @@ OPTIX_RAYGEN(RenderFrame)() {
     const float v = 0.5f - (iy + 0.5f) / fr.height;
 
     RayPayload payload;
-    payload.color = Vec3::ZeroVec();
+    payload.color = pcm::Vec3::Zero();
 
     RayDesc ray;
     ray.origin = cam.position;
@@ -67,5 +67,5 @@ OPTIX_RAYGEN(RenderFrame)() {
     );
 
     const unsigned int buffer_index = ix + iy * fr.width;
-    fr.color_buffer[buffer_index] = Vec4(payload.color, 1.0f);
+    fr.color_buffer[buffer_index] = pcm::Vec4(payload.color, 1.0f);
 }

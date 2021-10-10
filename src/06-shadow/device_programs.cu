@@ -6,7 +6,7 @@
 __constant__ LaunchParams optix_launch_params;
 
 struct RayPayload {
-    Vec3 color;
+    pcm::Vec3 color;
 };
 
 struct VisibilityRayPayload {
@@ -26,19 +26,19 @@ OPTIX_CLOSESTHIT(Radiance)() {
     const float bc_v = optixGetTriangleBarycentrics().y;
     const float bc_w = 1.0f - bc_u - bc_v;
 
-    const Vec3 pos = bc_w * data->vertex[i0] + bc_u * data->vertex[i1] + bc_v * data->vertex[i2];
-    const Vec3 norm = (bc_w * data->normal[i0] + bc_u * data->normal[i1] + bc_v * data->normal[i2]).Normalize();
+    const pcm::Vec3 pos = bc_w * data->vertex[i0] + bc_u * data->vertex[i1] + bc_v * data->vertex[i2];
+    const pcm::Vec3 norm = (bc_w * data->normal[i0] + bc_u * data->normal[i1] + bc_v * data->normal[i2]).Normalize();
 
-    Vec3 base_color = data->base_color;
+    pcm::Vec3 base_color = data->base_color;
     if (data->base_color_mapped) {
-        const Vec2 uv = bc_w * data->uv[i0] + bc_u * data->uv[i1] + bc_v * data->uv[i2];
+        const pcm::Vec2 uv = bc_w * data->uv[i0] + bc_u * data->uv[i1] + bc_v * data->uv[i2];
         float4 tex_val = tex2D<float4>(data->base_color_map, uv.X(), uv.Y());
-        base_color *= Vec3(tex_val.x, tex_val.y, tex_val.z);
+        base_color *= pcm::Vec3(tex_val.x, tex_val.y, tex_val.z);
     }
     
-    const Vec3 light_vec = optix_launch_params.light.position - pos;
+    const pcm::Vec3 light_vec = optix_launch_params.light.position - pos;
     const float light_dist = light_vec.Length();
-    const Vec3 light_dir = light_vec / light_dist;
+    const pcm::Vec3 light_dir = light_vec / light_dist;
 
     const float dot = max(norm.Dot(light_dir), 0.0f);
 
@@ -62,7 +62,7 @@ OPTIX_CLOSESTHIT(Radiance)() {
         &shadow_payload
     );
 
-    const Vec3 light_strength = optix_launch_params.light.strength / light_dist;
+    const pcm::Vec3 light_strength = optix_launch_params.light.strength / light_dist;
     payload->color = dot * shadow_payload.visibility * base_color * light_strength + 0.1f * base_color;
 }
 
@@ -72,7 +72,7 @@ OPTIX_ANYHIT(Empty)() {}
 
 OPTIX_MISS(Radiance)() {
     RayPayload *payload = GetRayPayload<RayPayload>();
-    payload->color = Vec3(1.0f, 1.0f, 1.0f);
+    payload->color = pcm::Vec3(1.0f, 1.0f, 1.0f);
 }
 
 OPTIX_MISS(Shadow)() {
@@ -91,7 +91,7 @@ OPTIX_RAYGEN(RenderFrame)() {
     const float v = 0.5f - (iy + 0.5f) / fr.height;
 
     RayPayload payload;
-    payload.color = Vec3::ZeroVec();
+    payload.color = pcm::Vec3::Zero();
 
     RayDesc ray;
     ray.origin = cam.position;
@@ -111,5 +111,5 @@ OPTIX_RAYGEN(RenderFrame)() {
     );
 
     const unsigned int buffer_index = ix + iy * fr.width;
-    fr.color_buffer[buffer_index] = Vec4(payload.color, 1.0f);
+    fr.color_buffer[buffer_index] = pcm::Vec4(payload.color, 1.0f);
 }

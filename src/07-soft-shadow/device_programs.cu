@@ -7,7 +7,7 @@
 __constant__ LaunchParams optix_launch_params;
 
 struct RayPayload {
-    Vec3 color;
+    pcm::Vec3 color;
     RandomNumberGenerator rng;
 };
 
@@ -16,10 +16,10 @@ struct VisibilityRayPayload {
 };
 
 static __device__ void SampleLight(
-    const Vec3 &pos,
+    const pcm::Vec3 &pos,
     RandomNumberGenerator &rng,
-    Vec3 &light_dir,
-    Vec3 &light_strength,
+    pcm::Vec3 &light_dir,
+    pcm::Vec3 &light_strength,
     float &light_dist,
     float &sample_pdf
 ) {
@@ -32,12 +32,12 @@ static __device__ void SampleLight(
         light_index = lights.data[light_index].at_another_index;
     }
 
-    const IVec3 ind = lights.data[light_index].index;
-    const Vec3 p0 = lights.vertex[ind.X()];
-    const Vec3 p1 = lights.vertex[ind.Y()];
-    const Vec3 p2 = lights.vertex[ind.Z()];
-    const Vec3 cross = Vec3(p1 - p0).Cross(p2 - p0);
-    const Vec3 norm = cross.Normalize();
+    const pcm::IVec3 ind = lights.data[light_index].index;
+    const pcm::Vec3 p0 = lights.vertex[ind.X()];
+    const pcm::Vec3 p1 = lights.vertex[ind.Y()];
+    const pcm::Vec3 p2 = lights.vertex[ind.Z()];
+    const pcm::Vec3 cross = (p1 - p0).Cross(p2 - p0);
+    const pcm::Vec3 norm = cross.Normalize();
 
     const float r0 = rng.NextFloat(0.0f, 1.0f);
     const float r0_sqrt = sqrt(r0);
@@ -46,9 +46,9 @@ static __device__ void SampleLight(
     const float u = 1.0f - r0_sqrt;
     const float v = r0_sqrt * (1.0f - r1);
     const float w = 1.0f - u - v;
-    const Vec3 light_pos = u * p0 + v * p1 + w * p2;
+    const pcm::Vec3 light_pos = u * p0 + v * p1 + w * p2;
 
-    const Vec3 light_vec = light_pos - pos;
+    const pcm::Vec3 light_vec = light_pos - pos;
     const float light_dist_sqr = light_vec.MagnitudeSqr();
     light_dist = sqrt(light_dist_sqr);
     light_dir = light_vec / light_dist;
@@ -70,18 +70,18 @@ OPTIX_CLOSESTHIT(Radiance)() {
     const float bc_v = optixGetTriangleBarycentrics().y;
     const float bc_w = 1.0f - bc_u - bc_v;
 
-    const Vec3 pos = bc_w * data->vertex[i0] + bc_u * data->vertex[i1] + bc_v * data->vertex[i2];
-    const Vec3 norm = (bc_w * data->normal[i0] + bc_u * data->normal[i1] + bc_v * data->normal[i2]).Normalize();
+    const pcm::Vec3 pos = bc_w * data->vertex[i0] + bc_u * data->vertex[i1] + bc_v * data->vertex[i2];
+    const pcm::Vec3 norm = (bc_w * data->normal[i0] + bc_u * data->normal[i1] + bc_v * data->normal[i2]).Normalize();
 
-    Vec3 base_color = data->base_color;
+    pcm::Vec3 base_color = data->base_color;
     if (data->base_color_mapped) {
-        const Vec2 uv = bc_w * data->uv[i0] + bc_u * data->uv[i1] + bc_v * data->uv[i2];
+        const pcm::Vec2 uv = bc_w * data->uv[i0] + bc_u * data->uv[i1] + bc_v * data->uv[i2];
         float4 tex_val = tex2D<float4>(data->base_color_map, uv.X(), uv.Y());
-        base_color *= Vec3(tex_val.x, tex_val.y, tex_val.z);
+        base_color *= pcm::Vec3(tex_val.x, tex_val.y, tex_val.z);
     }
 
-    Vec3 light_dir;
-    Vec3 light_strength;
+    pcm::Vec3 light_dir;
+    pcm::Vec3 light_strength;
     float light_dist;
     float light_pdf;
     SampleLight(pos, payload->rng, light_dir, light_strength, light_dist, light_pdf);
@@ -117,7 +117,7 @@ OPTIX_ANYHIT(Empty)() {}
 
 OPTIX_MISS(Radiance)() {
     RayPayload *payload = GetRayPayload<RayPayload>();
-    payload->color = Vec3(1.0f, 1.0f, 1.0f);
+    payload->color = pcm::Vec3(1.0f, 1.0f, 1.0f);
 }
 
 OPTIX_MISS(Shadow)() {
@@ -134,7 +134,7 @@ OPTIX_RAYGEN(RenderFrame)() {
 
     const uint32_t buffer_index = ix + iy * fr.width;
     RayPayload payload;
-    payload.color = Vec3::ZeroVec();
+    payload.color = pcm::Vec3::Zero();
     payload.rng.Seed(buffer_index + fr.curr_time);
 
     const float uu = payload.rng.NextFloat(0.0f, 1.0f);
@@ -159,7 +159,7 @@ OPTIX_RAYGEN(RenderFrame)() {
         &payload
     );
 
-    const Vec4 accum_result = fr.accum_weight * Vec4(payload.color, 1.0f)
+    const pcm::Vec4 accum_result = fr.accum_weight * pcm::Vec4(payload.color, 1.0f)
         + (1.0f - fr.accum_weight) * fr.prev_color_buffer[buffer_index];
     fr.color_buffer[buffer_index] = accum_result;
 }

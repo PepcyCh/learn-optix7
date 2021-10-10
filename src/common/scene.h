@@ -5,7 +5,7 @@
 
 struct Mesh {
     GeometryUtils::MeshData data;
-    Vec3 base_color;
+    pcm::Vec3 base_color;
     int base_color_map_index = -1;
 };
 

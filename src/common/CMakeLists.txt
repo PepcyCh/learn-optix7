@@ -19,9 +19,9 @@ add_library(optix_common
     renderer_base.h
     scene.cpp
     scene.h
+    shader_common.h
     texture.cpp
     texture.h
-    math/vec.h
 )
 
 target_compile_features(optix_common
@@ -33,7 +33,7 @@ target_include_directories(optix_common
 )
 
 target_link_libraries(optix_common
-    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt
+    PUBLIC OptiX::OptiX CUDA::cudart CUDA::cuda_driver fmt::fmt pep-cuda-math
     PRIVATE glfw glad imgui::imgui tinyobjloader::tinyobjloader
 )
 

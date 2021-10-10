@@ -9,5 +9,6 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 add_subdirectory(external/glad)
+add_subdirectory(external/pep-cuda-math)
 
 add_subdirectory(src)

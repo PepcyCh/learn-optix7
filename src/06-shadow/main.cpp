@@ -59,7 +59,7 @@ public:
         launch_params_.frame.width = color_buffer_width_;
         launch_params_.frame.height = color_buffer_height_;
         launch_params_.traversable = BuildAccel();
-        launch_params_.light.strength = Vec3(1000.0f, 1000.0f, 1000.0f);
+        launch_params_.light.strength = pcm::Vec3(1000.0f, 1000.0f, 1000.0f);
 
         launch_params_buffer_.Alloc(sizeof(LaunchParams));
 
@@ -74,15 +74,15 @@ private:
             MeshBuffer data{};
             data.position_buffer.AllocAndUpload(
                 mesh.data.positions.data(),
-                mesh.data.positions.size() * sizeof(Vec3)
+                mesh.data.positions.size() * sizeof(pcm::Vec3)
             );
             data.normal_buffer.AllocAndUpload(
                 mesh.data.normals.data(),
-                mesh.data.normals.size() * sizeof(Vec3)
+                mesh.data.normals.size() * sizeof(pcm::Vec3)
             );
             data.uv_buffer.AllocAndUpload(
                 mesh.data.uvs.data(),
-                mesh.data.uvs.size() * sizeof(Vec2)
+                mesh.data.uvs.size() * sizeof(pcm::Vec2)
             );
             data.index_buffer.AllocAndUpload(
                 mesh.data.indices.data(),
@@ -292,9 +292,9 @@ private:
                 HitgroupRecord rec;
                 OPTIX_CHECK(optixSbtRecordPackHeader(pg, &rec));
 
-                rec.data.vertex = meshes_buffers_[i].position_buffer.TypedPtr<Vec3>();
-                rec.data.normal = meshes_buffers_[i].normal_buffer.TypedPtr<Vec3>();
-                rec.data.uv = meshes_buffers_[i].uv_buffer.TypedPtr<Vec2>();
+                rec.data.vertex = meshes_buffers_[i].position_buffer.TypedPtr<pcm::Vec3>();
+                rec.data.normal = meshes_buffers_[i].normal_buffer.TypedPtr<pcm::Vec3>();
+                rec.data.uv = meshes_buffers_[i].uv_buffer.TypedPtr<pcm::Vec2>();
                 rec.data.index = meshes_buffers_[i].index_buffer.TypedPtr<uint32_t>();
 
                 rec.data.base_color = scene_.meshes[i].base_color;
@@ -330,7 +330,7 @@ private:
 
             inputs[i].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
             inputs[i].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-            inputs[i].triangleArray.vertexStrideInBytes = sizeof(Vec3);
+            inputs[i].triangleArray.vertexStrideInBytes = sizeof(pcm::Vec3);
             inputs[i].triangleArray.numVertices = scene_.meshes[i].data.positions.size();
             inputs[i].triangleArray.vertexBuffers = &vertex_buffer_ptrs[i];
             inputs[i].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
@@ -410,7 +410,7 @@ private:
         if (launch_params_.frame.width == 0 || launch_params_.frame.height == 0) {
             return;
         }
-        launch_params_.frame.color_buffer = color_buffer_.TypedMap<Vec4>();
+        launch_params_.frame.color_buffer = color_buffer_.TypedMap<pcm::Vec4>();
 
         launch_params_buffer_.Upload(&launch_params_, sizeof(launch_params_));
         launch_params_.frame.id += 1;
@@ -442,7 +442,7 @@ private:
     }
 
     void Update() override {
-        launch_params_.light.position = Vec3(
+        launch_params_.light.position = pcm::Vec3(
             light_radius_ * std::cos(frame_counter_.TotalTime()),
             light_height_,
             light_radius_ * std::sin(frame_counter_.TotalTime())
@@ -474,13 +474,13 @@ private:
         const float x = camera_radius_ * std::sin(camera_phi_) * std::cos(camera_theta_);
         const float y = camera_radius_ * std::cos(camera_phi_);
         const float z = camera_radius_ * std::sin(camera_phi_) * std::sin(camera_theta_);
-        launch_params_.camera.position = Vec3(x, y, z) + camera_look_at_;
-        launch_params_.camera.direction = (-Vec3(x, y, z)).Normalize();
+        launch_params_.camera.position = pcm::Vec3(x, y, z) + camera_look_at_;
+        launch_params_.camera.direction = (-pcm::Vec3(x, y, z)).Normalize();
 
         const float twice_tan_half_fov = 2.0f * std::tan(camera_fov_ * 0.5f);
         const float aspect = static_cast<float>(color_buffer_width_) / color_buffer_height_;
         launch_params_.camera.right =
-            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(Vec3::kY).Normalize();
+            twice_tan_half_fov * aspect * launch_params_.camera.direction.Cross(pcm::Vec3::UnitY()).Normalize();
         launch_params_.camera.up =
             twice_tan_half_fov * launch_params_.camera.right.Cross(launch_params_.camera.direction).Normalize();
     }
@@ -508,7 +508,7 @@ private:
     std::vector<MeshBuffer> meshes_buffers_;
     std::vector<CudaTexture> scene_textures_;
 
-    Vec3 camera_look_at_ = Vec3(0.0f, -100.0f, 0.0f);
+    pcm::Vec3 camera_look_at_ = pcm::Vec3(0.0f, -100.0f, 0.0f);
     float camera_radius_ = 2000.0f;
     float camera_theta_ = numbers::pi_v<float> * 0.25f;
     float camera_phi_ = numbers::pi_v<float> * 0.25f;

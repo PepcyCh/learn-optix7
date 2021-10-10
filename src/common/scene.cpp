@@ -124,7 +124,7 @@ Scene Scene::LoadObj(std::string_view &&filename) {
 
         const int mat_id = shape.mesh.material_ids[0];
         auto diffuse = materials[mat_id].diffuse;
-        mesh.base_color = Vec3(diffuse[0], diffuse[1], diffuse[2]);
+        mesh.base_color = pcm::Vec3(diffuse[0], diffuse[1], diffuse[2]);
         if (materials[mat_id].diffuse_texname.empty()) {
             mesh.base_color_map_index = -1;
         } else {
