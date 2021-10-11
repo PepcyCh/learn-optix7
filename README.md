@@ -42,4 +42,7 @@ One may install these dependencies manually or use [vcpkg](https://github.com/mi
    1. static lighting meshes instead of point lights
    2. importance sampling to light with respect to light strength * triangle area using alias method
    3. accumulate history frames when camera is not moving
+8. G-buffer
+   1. render the scene to G-buffer (world position, normal, base color) using OpenGL
+   2. only trace shadow ray in raygen program
 

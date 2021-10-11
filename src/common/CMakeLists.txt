@@ -9,6 +9,8 @@ add_library(optix_common
     frame_counter.h
     geometry.cpp
     geometry.h
+    gl_utils.cpp
+    gl_utils.h
     lights.cpp
     lights.h
     light_data.h

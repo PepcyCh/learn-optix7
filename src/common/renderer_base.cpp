@@ -14,6 +14,7 @@
 
 #include "../defines.h"
 #include "check_macros.h"
+#include "gl_utils.h"
 
 namespace {
 
@@ -23,18 +24,6 @@ void OptixLogFunc(unsigned int level, const char *tag, const char *msg, void *) 
 
 void GlfwErrorLogFunc(int error, const char *desc) {
     fmt::print(stderr, "GLFW error: {}({})\n", error, desc);
-}
-
-unsigned int LoadShader(const std::string &path, GLenum type) {
-    std::ifstream fin(path);
-    const std::string code((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
-
-    GLuint id = glCreateShader(type);
-    const char *p_code = code.c_str();
-    glShaderSource(id, 1, &p_code, nullptr);
-    glCompileShader(id);
-
-    return id;
 }
 
 }
@@ -110,15 +99,15 @@ void OptixApp::InitGl() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     const unsigned int screen_vs =
-        LoadShader(fmt::format("{}common/shaders/screen.vert", PROJECT_SRC_DIR), GL_VERTEX_SHADER);
+        GlUtils::LoadShader(fmt::format("{}common/shaders/screen.vert", PROJECT_SRC_DIR), GL_VERTEX_SHADER);
     const unsigned int screen_fs =
-        LoadShader(fmt::format("{}common/shaders/screen.frag", PROJECT_SRC_DIR), GL_FRAGMENT_SHADER);
+        GlUtils::LoadShader(fmt::format("{}common/shaders/screen.frag", PROJECT_SRC_DIR), GL_FRAGMENT_SHADER);
     screen_shader_ = glCreateProgram();
     glAttachShader(screen_shader_, screen_vs);
     glAttachShader(screen_shader_, screen_fs);
     glLinkProgram(screen_shader_);
-    glDeleteSamplers(1, &screen_vs);
-    glDeleteSamplers(1, &screen_fs);
+    glDeleteShader(screen_vs);
+    glDeleteShader(screen_fs);
 
     const int screen_tex_shader_loc = glGetUniformLocation(screen_shader_, "color_buffer_img");
     glUseProgram(screen_shader_);
@@ -162,6 +151,7 @@ void OptixApp::MainLoop() {
 
         color_buffer_.UnpackTo(screen_tex_);
         glBindTexture(GL_TEXTURE_2D, screen_tex_);
+        glUseProgram(screen_shader_);
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 

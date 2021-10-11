@@ -116,27 +116,53 @@ CUDA_HOST_DEVICE inline Mat4 LookAt(const Vec3 &pos, const Vec3 &look_at, const 
     );
 }
 
-CUDA_HOST_DEVICE inline Mat4 Perspective(float fov, float aspect, float n, float f) {
+CUDA_HOST_DEVICE inline Mat4 Perspective(float fov, float aspect, float n, float f, bool flip_y = false) {
     const float t = 1.0f/ std::tan(fov * 0.5f);
     const float invz = 1.0f / (f - n);
-    return Mat4(
+#ifdef PCM_GL_MATRIX
+    Mat4 res(
+        Vec4(t / aspect, 0.0f, 0.0f, 0.0f),
+        Vec4(0.0f, t, 0.0f, 0.0f),
+        Vec4(0.0f, 0.0f, -(f + n) * invz, -1.0f),
+        Vec4(0.0f, 0.0f, -2.0f * f * n * invz, 0.0f)
+    );
+#else
+    Mat4 res(
         Vec4(t / aspect, 0.0f, 0.0f, 0.0f),
         Vec4(0.0f, t, 0.0f, 0.0f),
         Vec4(0.0f, 0.0f, -f * invz, -1.0f),
         Vec4(0.0f, 0.0f, -f * n * invz, 0.0f)
     );
+#endif
+    if (flip_y) {
+        res[1][1] = -res[1][1];
+    }
+    return res;
 }
 
-CUDA_HOST_DEVICE inline Mat4 Orthographic(float l, float r, float b, float t, float n, float f) {
+CUDA_HOST_DEVICE inline Mat4 Orthographic(float l, float r, float b, float t, float n, float f, bool flip_y = false) {
     const float invw = 1.0f / (r - l);
     const float invh = 1.0f / (t - b);
     const float invd = 1.0f / (f - n);
-    return Mat4(
+#ifdef PCM_GL_MATRIX
+    Mat4 res(
         Vec4(2.0f * invw, 0.0f, 0.0f, 0.0f),
         Vec4(0.0f, 2.0f * invh, 0.0f, 0.0f),
         Vec4(0.0f, 0.0f, -invd, 0.0f),
         Vec4(-(l + r) * invw, -(b + t) * invh, -n * invd, 1.0f)
     );
+#else
+    Mat4 res(
+        Vec4(2.0f * invw, 0.0f, 0.0f, 0.0f),
+        Vec4(0.0f, 2.0f * invh, 0.0f, 0.0f),
+        Vec4(0.0f, 0.0f, -2.0f * invd, 0.0f),
+        Vec4(-(l + r) * invw, -(b + t) * invh, -(n + f) * invd, 1.0f)
+    );
+#endif
+    if (flip_y) {
+        res[1][1] = -res[1][1];
+    }
+    return res;
 }
 
 }
