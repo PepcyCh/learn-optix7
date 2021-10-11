@@ -5,6 +5,19 @@
 #include "glad/glad.h"
 #include "fmt/core.h"
 
+bool GlUtils::CheckExtension(std::string_view &&name) {
+    GLint n = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+    for (GLint i = 0; i < n; i++) {
+        auto *extension = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
+        if (!strncmp(name.data(), extension, name.length())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 uint32_t GlUtils::LoadShader(const std::string &path, uint32_t type) {
     std::ifstream fin(path);
     const std::string code((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());

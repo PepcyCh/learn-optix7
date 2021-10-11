@@ -57,6 +57,17 @@ public:
             return false;
         }
 
+        if (GlUtils::CheckExtension("GL_ARB_clip_control")) {
+            use_reversed_z_ = true;
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            glDepthFunc(GL_GREATER);
+            glClearDepth(0.0);
+        } else {
+            use_reversed_z_ = false;
+            glDepthFunc(GL_LESS);
+            glClearDepth(1.0);
+        }
+
         BuildScene();
         BuildSceneGl();
         BuildLights();
@@ -526,7 +537,6 @@ private:
         glBindFramebuffer(GL_FRAMEBUFFER, g_buffer_.fbo);
 
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(g_buffer_shader_);
@@ -613,7 +623,11 @@ private:
 
         const float aspect = static_cast<float>(color_buffer_width_) / color_buffer_height_;
 
-        camera_proj_ = pcm::Perspective(camera_fov_, aspect, 0.01f, 10000.0f, true);
+        if (use_reversed_z_) {
+            camera_proj_ = pcm::PerspectiveReverseZ(camera_fov_, aspect, 0.01f, 10000.0f, true);
+        } else {
+            camera_proj_ = pcm::Perspective(camera_fov_, aspect, 0.01f, 10000.0f, true);
+        }
         camera_view_ = pcm::LookAt(position, camera_look_at_, pcm::Vec3::UnitY());
 
         accum_frame_count_ = 0;
@@ -662,6 +676,7 @@ private:
     double last_mouse_y_ = 0.0;
     pcm::Mat4 camera_proj_;
     pcm::Mat4 camera_view_;
+    bool use_reversed_z_;
 
     LaunchParams launch_params_ = {};
     CudaBuffer launch_params_buffer_;
