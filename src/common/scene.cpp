@@ -1,6 +1,7 @@
 #include "scene.h"
 
 #include <stdexcept>
+#include <unordered_map>
 
 #include "fmt/core.h"
 #define STB_IMAGE_IMPLEMENTATION

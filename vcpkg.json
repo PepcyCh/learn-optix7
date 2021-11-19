@@ -7,7 +7,7 @@
     "glfw3",
     {
       "name": "imgui",
-      "features": [ "glfw-binding", "opengl3-glad-binding" ]
+      "features": [ "glfw-binding", "opengl3-binding" ]
     },
     "stb",
     "tinyobjloader"
